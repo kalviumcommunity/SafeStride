@@ -169,6 +169,10 @@ The app will include the following main screens:
 - Profile
 - Reviews & Ratings
 
+## Responsive UI Implementation
+
+SafeStride includes a responsive home screen designed to adapt seamlessly across different screen sizes and orientations. The layout dynamically adjusts using Flutter’s MediaQuery, LayoutBuilder, and flexible widgets to ensure a consistent user experience on phones and tablets.
+
 ## 🔧 Firebase Schema
 
 ### Collections
