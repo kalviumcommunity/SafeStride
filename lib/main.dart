@@ -21,6 +21,15 @@ void main() async {
 
 class SafeStrideApp extends StatelessWidget {
   const SafeStrideApp({super.key});
+import 'screens/home_screen.dart';
+import 'screens/second_screen.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +131,13 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ),
+      debugShowCheckedModeBanner: false,
+      title: 'Multi Screen Navigation',
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomeScreen(),
+        '/second': (context) => const SecondScreen(),
+      },
     );
   }
 }

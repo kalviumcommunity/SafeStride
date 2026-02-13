@@ -1,3 +1,21 @@
+<<<<<<< HEAD
+# safestride
+
+A new Flutter project.
+
+## Getting Started
+
+This project is a starting point for a Flutter application.
+
+A few resources to get you started if this is your first Flutter project:
+
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
+=======
 # SafeStride – Community-Verified Routes for Urban Runners & Cyclists
 
 A cross-platform mobile application that helps runners and cyclists discover safe, community-validated routes using real user reviews, ratings, and shared experiences.
@@ -169,6 +187,10 @@ The app will include the following main screens:
 - Profile
 - Reviews & Ratings
 
+## Responsive UI Implementation
+
+SafeStride includes a responsive home screen designed to adapt seamlessly across different screen sizes and orientations. The layout dynamically adjusts using Flutter’s MediaQuery, LayoutBuilder, and flexible widgets to ensure a consistent user experience on phones and tablets.
+
 ## 🔧 Firebase Schema
 
 ### Collections
@@ -187,3 +209,4 @@ The app will include the following main screens:
 ---
 
 **SafeStride** - Making urban running and cycling safer, one route at a time. 🏃‍♂️🚴‍♀️
+>>>>>>> f947b4631e1c7bd419448be9fe426974d88ecbc8
