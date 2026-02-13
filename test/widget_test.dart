@@ -8,6 +8,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:safestride/main_firebase_test.dart';
+
+void main() {
+  testWidgets('SafeStride app smoke test', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const SafeStrideApp());
+
+    // Verify that the app loads
+    expect(find.text('SafeStride'), findsOneWidget);
 import 'package:safestride/main.dart';
 
 void main() {
