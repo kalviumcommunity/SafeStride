@@ -23,6 +23,7 @@ class SafeStrideApp extends StatelessWidget {
   const SafeStrideApp({super.key});
 import 'screens/home_screen.dart';
 import 'screens/second_screen.dart';
+import 'screens/scrollable_views.dart';   // ✅ NEW IMPORT
 
 void main() {
   runApp(const MyApp());
@@ -132,11 +133,14 @@ class _MyHomePageState extends State<MyHomePage> {
         child: const Icon(Icons.add),
       ),
       debugShowCheckedModeBanner: false,
-      title: 'Multi Screen Navigation',
+      title: 'Scrollable Views App',
+
       initialRoute: '/',
+
       routes: {
         '/': (context) => const HomeScreen(),
         '/second': (context) => const SecondScreen(),
+        '/scrollable': (context) => const ScrollableViews(), // ✅ NEW ROUTE
       },
     );
   }
