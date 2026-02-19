@@ -492,6 +492,12 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ),
 
+                Image.asset(
+  'assets/images/logo.png',
+  width: 150,
+)
+
+
                 const SizedBox(height: 12),
 
                 SizedBox(
