@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-
-import 'screens/home_screen.dart';
-import 'screens/second_screen.dart';
-import 'screens/scrollable_views.dart';
+import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  
+  // Try to initialize Firebase, but handle errors gracefully
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -16,8 +14,9 @@ void main() async {
     debugPrint('Firebase initialized successfully');
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
+    debugPrint('Running in demo mode without Firebase');
   }
-
+  
   runApp(const SafeStrideApp());
 }
 
@@ -27,21 +26,21 @@ class SafeStrideApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'SafeStride',
-
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        primarySwatch: Colors.green,
         useMaterial3: true,
       ),
-
-      initialRoute: '/',
-
-      routes: {
-        '/': (context) => const HomeScreen(),
-        '/second': (context) => const SecondScreen(),
-        '/scrollable': (context) => const ScrollableViews(),
-      },
+      home: const AuthWrapper(),
     );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const LoginScreen();
   }
 }
