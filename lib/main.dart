@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'theme/app_theme.dart';
+import 'theme_state.dart';
 import 'screens/home_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeState(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -10,9 +19,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: HomeScreen(),
+      title: 'SafeStride',
+
+      // Light Theme
+      theme: lightTheme,
+
+      // Dark Theme
+      darkTheme: darkTheme,
+
+      // Controlled by Provider
+      themeMode: context.watch<ThemeState>().mode,
+
+      home: const HomeScreen(),
     );
   }
 }
