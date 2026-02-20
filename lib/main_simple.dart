@@ -25,7 +25,7 @@ class SafeStrideApp extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
+              Text(
                 'SafeStride App',
                 style: TextStyle(
                   fontSize: 24,
@@ -33,15 +33,15 @@ class SafeStrideApp extends StatelessWidget {
                   color: Colors.green,
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
+              SizedBox(height: 20),
+              Text(
                 '🏃‍♂️🚴‍♀️',
                 style: TextStyle(
                   fontSize: 48,
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
+              SizedBox(height: 20),
+              Text(
                 'Your SafeStride app is ready!',
                 style: TextStyle(
                   fontSize: 16,
