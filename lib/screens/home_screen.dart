@@ -124,6 +124,14 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await _authService.signOut();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Logged out successfully'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
             },
           ),
         ],
@@ -198,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
             // Routes List
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
+              child: StreamBuilder(
                 stream: _firestoreService.getAllRoutes(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -219,21 +227,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.directions_run,
                             size: 80,
                             color: Colors.grey,
                           ),
-                          SizedBox(height: 16),
-                          Text(
+                          const SizedBox(height: 16),
+                          const Text(
                             'No routes available',
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.grey,
                             ),
                           ),
-                          SizedBox(height: 8),
-                          Text(
+                          const SizedBox(height: 8),
+                          const Text(
                             'Add your first route to get started!',
                             style: TextStyle(
                               fontSize: 14,
@@ -309,8 +317,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: Row(
                                   children: [
                                     Icon(Icons.delete, color: Colors.red),
-                                    SizedBox(width: 8),
-                                    Text('Delete'),
+                                    const SizedBox(width: 8),
+                                    const Text('Delete'),
                                   ],
                                 ),
                               ),
@@ -318,6 +326,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             onSelected: (value) async {
                               if (value == 'delete') {
                                 await _firestoreService.deleteRoute(routeId);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Route deleted successfully'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
                               }
                             },
                           ),
@@ -329,193 +345,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ],
-
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
-
-  bool _toggled = false;
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      duration: const Duration(seconds: 3),
-      vsync: this,
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _toggleAnimation() {
-    setState(() {
-      _toggled = !_toggled;
-    });
-  }
-
-  void _goToSecondScreen() {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 600),
-        pageBuilder: (_, __, ___) => const SecondScreen(),
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF1F1C2C), Color(0xFF928DAB)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-            padding: const EdgeInsets.all(30),
-            width: 350,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(25),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 15,
-                  offset: Offset(0, 8),
-                )
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-
-                const Text(
-                  "SafeStride",
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                const Text(
-                  "Smooth Animations & Transitions",
-                  style: TextStyle(color: Colors.grey),
-                ),
-
-                const SizedBox(height: 30),
-
-                // 🔹 Animated Box
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.easeInOut,
-                  height: 120,
-                  width: _toggled ? 200 : 140,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: _toggled
-                          ? [Colors.teal, Colors.green]
-                          : [Colors.deepPurple, Colors.blue],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    "Interactive Card",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 25),
-
-                // 🔹 Animated Opacity
-                AnimatedOpacity(
-                  duration: const Duration(milliseconds: 600),
-                  opacity: _toggled ? 1.0 : 0.4,
-                  child: const FlutterLogo(size: 80),
-                ),
-
-                const SizedBox(height: 25),
-
-                // 🔹 Rotating Icon
-                RotationTransition(
-                  turns: _controller,
-                  child: const Icon(
-                    Icons.flutter_dash,
-                    size: 50,
-                    color: Colors.blue,
-                  ),
-                ),
-
-                const SizedBox(height: 30),
-
-                // 🔹 Modern Buttons
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                    onPressed: _toggleAnimation,
-                    child: const Text("Toggle Animation"),
-                  ),
-                ),
-
-                Image.asset(
-  'assets/images/logo.png',
-  width: 150,
-)
-
-
-                const SizedBox(height: 12),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                    onPressed: _goToSecondScreen,
-                    child: const Text("View Next Screen"),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
