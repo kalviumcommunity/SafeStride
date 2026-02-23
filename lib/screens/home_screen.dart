@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/firestore_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -11,40 +11,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final AuthService _authService = AuthService();
   final FirestoreService _firestoreService = FirestoreService();
-  final TextEditingController _routeNameController = TextEditingController();
-  final TextEditingController _routeDistanceController = TextEditingController();
+
+  final TextEditingController _routeNameController =
+      TextEditingController();
+  final TextEditingController _routeDistanceController =
+      TextEditingController();
 
   @override
   void dispose() {
     _routeNameController.dispose();
     _routeDistanceController.dispose();
     super.dispose();
-  }
-
-  Future<void> _addSampleRoute() async {
-    await _firestoreService.addRoute({
-      'name': 'Central Park Loop',
-      'type': 'running',
-      'distance': 5.2,
-      'safetyRating': 4.5,
-      'difficulty': 'medium',
-      'description': 'Beautiful loop around Central Park with scenic views',
-      'createdAt': DateTime.now().toIso8601String(),
-      'createdBy': _authService.currentUser?.uid,
-    });
-
-    await _firestoreService.addRoute({
-      'name': 'Brooklyn Bridge Route',
-      'type': 'cycling',
-      'distance': 8.7,
-      'safetyRating': 4.2,
-      'difficulty': 'hard',
-      'description': 'Challenging route with iconic bridge views',
-      'createdAt': DateTime.now().toIso8601String(),
-      'createdBy': _authService.currentUser?.uid,
-    });
   }
 
   Future<void> _showAddRouteDialog() async {
@@ -84,16 +62,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   _routeDistanceController.text.isNotEmpty) {
                 await _firestoreService.addRoute({
                   'name': _routeNameController.text,
-                  'type': 'running',
-                  'distance': double.parse(_routeDistanceController.text),
-                  'safetyRating': 4.0,
-                  'difficulty': 'medium',
-                  'description': 'User added route',
-                  'createdAt': DateTime.now().toIso8601String(),
-                  'createdBy': _authService.currentUser?.uid,
+                  'distance': double.parse(
+                      _routeDistanceController.text),
+                  'createdAt':
+                      DateTime.now().toIso8601String(),
+                  'createdBy':
+                      FirebaseAuth.instance.currentUser?.uid,
                 });
+
                 _routeNameController.clear();
                 _routeDistanceController.clear();
+
                 if (context.mounted) {
                   Navigator.pop(context);
                 }
@@ -108,13 +87,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = _authService.currentUser;
+    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('SafeStride'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -132,54 +109,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               }
+              await FirebaseAuth.instance.signOut();
+              // No Navigator needed!
+              // authStateChanges() in main.dart will handle redirect
             },
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Welcome Message
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.green,
-                      child: Text(
-                        user?.email?.substring(0, 1).toUpperCase() ?? 'U',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Welcome back!',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          Text(
-                            user?.email ?? 'User',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+      body: Column(
+        children: [
+          if (user != null)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                "Welcome, ${user.email}",
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
@@ -346,6 +292,52 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _firestoreService.getAllRoutes(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(
+                      child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData ||
+                    snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text('No routes found'),
+                  );
+                }
+
+                final routes = snapshot.data!.docs;
+
+                return ListView.builder(
+                  itemCount: routes.length,
+                  itemBuilder: (context, index) {
+                    final route =
+                        routes[index].data()
+                            as Map<String, dynamic>;
+                    final routeId = routes[index].id;
+
+                    return ListTile(
+                      title: Text(
+                          route['name'] ?? 'No name'),
+                      subtitle: Text(
+                          '${route['distance']} km'),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () async {
+                          await _firestoreService
+                              .deleteRoute(routeId);
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
