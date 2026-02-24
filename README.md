@@ -132,33 +132,119 @@ This project aligns with the simulated work curriculum through:
 | Wrong Firebase project selected | Incorrect project chosen | Re-run flutterfire configure |
 | Build fails | Gradle plugin missing | Add apply plugin: 'com.google.gms.google-services' in android/app/build.gradle |
 
-## 🔥 Firebase Setup Commands
+## 🔥 Firebase Authentication Setup
 
-### Installation and Configuration
-```bash
-# Install FlutterFire CLI
-dart pub global activate flutterfire_cli
+### 1. Enable Email/Password Authentication in Firebase Console
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Select your project: "safestride-65dd6"
+3. Navigate to **Authentication** → **Sign-in method**
+4. Click **Email/Password** → **Enable**
+5. Go to **Settings** → **Authorized domains**
+6. Add your app domain (if applicable)
 
-# Configure Firebase project
-flutterfire configure
+### 2. Firebase Authentication Implementation
 
-# Initialize Firebase in your app
-flutter pub add firebase_core firebase_auth cloud_firestore
-```
-
-### Firebase Initialization Code
+#### User Registration
 ```dart
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  runApp(const SafeStrideApp());
-}
+// Create new user with email and password
+await FirebaseAuth.instance.createUserWithEmailAndPassword(
+  email: email,
+  password: password,
+);
 ```
+
+#### User Login
+```dart
+// Sign in existing user
+await FirebaseAuth.instance.signInWithEmailAndPassword(
+  email: email,
+  password: password,
+);
+```
+
+#### Success/Error Messages
+```dart
+// Display success or error messages
+ScaffoldMessenger.of(context).showSnackBar(
+  SnackBar(content: Text('Login Successful')),
+);
+```
+
+### 3. Verify User Creation in Firebase Console
+After signup:
+- Go to **Firebase Console** → **Authentication** → **Users**
+- Your new user should appear in the table with registered email
+- This confirms your app is correctly communicating with Firebase Auth
+
+### 4. Handle Authentication State (Optional But Recommended)
+```dart
+// Listen to authentication state changes
+FirebaseAuth.instance.authStateChanges().listen((User? user) {
+  if (user != null) {
+    print("Logged in as ${user.email}");
+    // Navigate to home screen
+  } else {
+    print("User logged out");
+    // Navigate to login screen
+  }
+});
+```
+
+### 5. Logout Functionality (Optional Enhancement)
+```dart
+// Handle user logout
+await FirebaseAuth.instance.signOut();
+```
+
+### 6. Test and Verify
+Ensure that:
+- ✅ Signup works without crashing
+- ✅ Login works with valid credentials
+- ✅ Login fails with incorrect credentials (and shows an error)
+- ✅ New users appear in Firebase Console
+- ✅ Capture screenshots for your README
+
+### 7. Screenshot Requirements for README
+Your README.md must include:
+
+#### Authentication Screenshots:
+- ✅ Login screen UI
+- ✅ Signup screen UI
+- ✅ Firebase Console "Users" table
+- ✅ App showing login success message
+
+#### Firebase Console Verification:
+- ✅ Authentication enabled screenshot
+- ✅ User registration confirmation
+- ✅ Email/Password method enabled
+
+### 8. Reflection Questions
+
+#### Why Firebase Auth is useful?
+Firebase Authentication provides:
+- **Secure authentication** - Industry-standard security
+- **Multiple providers** - Email, social, phone auth
+- **Session management** - Automatic token handling
+- **Cross-platform** - Works on iOS, Android, Web
+- **Scalability** - Handles millions of users
+- **Integration** - Works seamlessly with other Firebase services
+
+#### Challenges faced during implementation:
+1. **Error Handling**: Different Firebase error codes required specific user messages
+2. **State Management**: Proper auth state changes needed for UI updates
+3. **Form Validation**: Client-side validation before Firebase calls
+4. **User Experience**: Loading states and success/error feedback
+5. **Security**: Proper password requirements and email verification
+
+#### How this helps your team integrate more Firebase features later:
+The authentication foundation enables:
+- **Social Login**: Easy addition of Google, Facebook, Apple sign-in
+- **Phone Authentication**: SMS verification capabilities
+- **Multi-factor Auth**: Enhanced security features
+- **User Profiles**: Link auth data to user profiles
+- **Permissions**: Role-based access control
+- **Analytics**: Track user behavior and engagement
+- **Cloud Functions**: Server-side authentication logic
 
 ## 📸 Firebase Integration Verification
 

@@ -38,6 +38,7 @@ class _SignupScreenState extends State<SignupScreen> {
         const SnackBar(
           content: Text('Passwords do not match'),
           backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
         ),
       );
       return;
@@ -56,16 +57,29 @@ class _SignupScreenState extends State<SignupScreen> {
           const SnackBar(
             content: Text('Sign up failed'),
             backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
           ),
         );
-      } else if (mounted) {
+      } else if (user != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Account created successfully!'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
         Navigator.pop(context);
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = _getErrorMessage(e.code);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -73,6 +87,7 @@ class _SignupScreenState extends State<SignupScreen> {
           SnackBar(
             content: Text('Sign up error: $e'),
             backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
           ),
         );
       }
@@ -80,6 +95,23 @@ class _SignupScreenState extends State<SignupScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  String _getErrorMessage(String code) {
+    switch (code) {
+      case 'weak-password':
+        return 'Password is too weak. Please choose a stronger password.';
+      case 'invalid-email':
+        return 'Email address is not valid.';
+      case 'email-already-in-use':
+        return 'An account already exists for this email.';
+      case 'operation-not-allowed':
+        return 'Operation not allowed. Please contact support.';
+      case 'too-many-requests':
+        return 'Too many requests. Try again later.';
+      default:
+        return 'An error occurred during sign up.';
     }
   }
 
