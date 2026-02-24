@@ -5,6 +5,7 @@ import 'firebase_options.dart';
 
 import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/map_screen.dart'; // 👈 ADD THIS
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,11 +23,21 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'SafeStride',
+
+      // Optional theme (clean UI)
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+        scaffoldBackgroundColor: Colors.white,
+      ),
+
+      routes: {
+        '/map': (context) => const MapScreen(),
+      },
+
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (ctx, snapshot) {
 
-          // While checking login state
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(
@@ -35,12 +46,10 @@ class MyApp extends StatelessWidget {
             );
           }
 
-          // If user is logged in
           if (snapshot.hasData) {
             return const HomeScreen();
           }
 
-          // If not logged in
           return const AuthScreen();
         },
       ),

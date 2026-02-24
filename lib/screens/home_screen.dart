@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import 'firestore_demo_screen.dart';
+import 'map_screen.dart'; // 👈 ADD THIS
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -119,6 +120,20 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('SafeStride'),
         actions: [
+          // 🗺 Map Button
+          IconButton(
+            icon: const Icon(Icons.map),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MapScreen(),
+                ),
+              );
+            },
+          ),
+
+          // ➕ Add Route
           IconButton(
             icon: const Icon(Icons.storage),
             onPressed: () {
@@ -135,6 +150,8 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.add),
             onPressed: _showAddRouteDialog,
           ),
+
+          // 🚪 Logout
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -148,8 +165,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
               await FirebaseAuth.instance.signOut();
-              // No Navigator needed!
-              // authStateChanges() in main.dart will handle redirect
             },
           ),
         ],
@@ -289,6 +304,62 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
+          ],
+        ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _firestoreService.getAllRoutes(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(
+                      child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData ||
+                    snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text('No routes found'),
+                  );
+                }
+
+                final routes = snapshot.data!.docs;
+
+                return ListView.builder(
+                  itemCount: routes.length,
+                  itemBuilder: (context, index) {
+                    final route =
+                        routes[index].data()
+                            as Map<String, dynamic>;
+                    final routeId = routes[index].id;
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      child: ListTile(
+                        title: Text(
+                          route['name'] ?? 'No name',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          '${route['distance']} km',
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete,
+                              color: Colors.red),
+                          onPressed: () async {
+                            await _firestoreService
+                                .deleteRoute(routeId);
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
