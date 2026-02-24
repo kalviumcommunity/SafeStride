@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+// This is a basic Flutter widget test.
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:safestride/main_firebase_test.dart';
 
@@ -11,16 +12,6 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify that the app loads successfully (no crashes)
-    expect(tester.takeException(), throwsA(isA<Exception>()), isFalse);
-import 'package:safestride/main.dart';
-
-void main() {
-  testWidgets('SafeStride app builds successfully',
-      (WidgetTester tester) async {
-    // Build the app
-    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: Text('Test'))));
-
-    // Verify that MaterialApp is present
-    expect(find.byType(MaterialApp), findsOneWidget);
+    expect(tester.takeException(), throwsA(isA<Exception>()));
   });
 }
