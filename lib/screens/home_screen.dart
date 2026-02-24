@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/firestore_service.dart';
+import 'map_screen.dart'; // 👈 ADD THIS
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -93,10 +94,26 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('SafeStride'),
         actions: [
+          // 🗺 Map Button
+          IconButton(
+            icon: const Icon(Icons.map),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MapScreen(),
+                ),
+              );
+            },
+          ),
+
+          // ➕ Add Route
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _showAddRouteDialog,
           ),
+
+          // 🚪 Logout
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -110,8 +127,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
               await FirebaseAuth.instance.signOut();
-              // No Navigator needed!
-              // authStateChanges() in main.dart will handle redirect
             },
           ),
         ],
@@ -319,17 +334,26 @@ class _HomeScreenState extends State<HomeScreen> {
                             as Map<String, dynamic>;
                     final routeId = routes[index].id;
 
-                    return ListTile(
-                      title: Text(
-                          route['name'] ?? 'No name'),
-                      subtitle: Text(
-                          '${route['distance']} km'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () async {
-                          await _firestoreService
-                              .deleteRoute(routeId);
-                        },
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      child: ListTile(
+                        title: Text(
+                          route['name'] ?? 'No name',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          '${route['distance']} km',
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete,
+                              color: Colors.red),
+                          onPressed: () async {
+                            await _firestoreService
+                                .deleteRoute(routeId);
+                          },
+                        ),
                       ),
                     );
                   },
