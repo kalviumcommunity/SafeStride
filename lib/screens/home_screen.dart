@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import 'firestore_demo_screen.dart';
 import 'map_screen.dart'; // 👈 ADD THIS
 
 class HomeScreen extends StatefulWidget {
@@ -13,11 +14,36 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  final AuthService _authService = AuthService();
 
   final TextEditingController _routeNameController =
       TextEditingController();
   final TextEditingController _routeDistanceController =
       TextEditingController();
+
+  Future<void> _addSampleRoute() async {
+    await _firestoreService.addRoute({
+      'name': 'Central Park Loop',
+      'type': 'running',
+      'distance': 5.2,
+      'safetyRating': 4.5,
+      'difficulty': 'medium',
+      'description': 'Beautiful loop around Central Park with scenic views',
+      'createdAt': DateTime.now().toIso8601String(),
+      'createdBy': FirebaseAuth.instance.currentUser?.uid,
+    });
+
+    await _firestoreService.addRoute({
+      'name': 'Brooklyn Bridge Route',
+      'type': 'cycling',
+      'distance': 8.7,
+      'safetyRating': 4.2,
+      'difficulty': 'hard',
+      'description': 'Challenging route with iconic bridge views',
+      'createdAt': DateTime.now().toIso8601String(),
+      'createdBy': FirebaseAuth.instance.currentUser?.uid,
+    });
+  }
 
   @override
   void dispose() {
@@ -109,6 +135,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // ➕ Add Route
           IconButton(
+            icon: const Icon(Icons.storage),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FirestoreDemoScreen(),
+                ),
+              );
+            },
+            tooltip: 'Firestore Demo',
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             onPressed: _showAddRouteDialog,
           ),
@@ -188,21 +226,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.directions_run,
                             size: 80,
                             color: Colors.grey,
                           ),
-                          const SizedBox(height: 16),
-                          const Text(
+                          SizedBox(height: 16),
+                          Text(
                             'No routes available',
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.grey,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          const Text(
+                          SizedBox(height: 8),
+                          Text(
                             'Add your first route to get started!',
                             style: TextStyle(
                               fontSize: 14,
@@ -242,60 +280,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           title: Text(
                             route['name'] ?? 'Unknown Route',
                             style: const TextStyle(
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${route['distance']?.toStringAsFixed(1) ?? '0.0'} km • ${route['difficulty'] ?? 'medium'} difficulty',
-                                style: TextStyle(color: Colors.grey[600]),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.star,
-                                    size: 16,
-                                    color: Colors.amber[600],
-                                  ),
-                                  Text(
-                                    ' ${route['safetyRating']?.toStringAsFixed(1) ?? '4.0'} safety rating',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                          subtitle: Text(
+                            '${route['distance']?.toString() ?? '0'} km • ${route['difficulty'] ?? 'Unknown'}',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                            ),
                           ),
-                          trailing: PopupMenuButton(
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.delete, color: Colors.red),
-                                    const SizedBox(width: 8),
-                                    const Text('Delete'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            onSelected: (value) async {
-                              if (value == 'delete') {
-                                await _firestoreService.deleteRoute(routeId);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Route deleted successfully'),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-                                }
-                              }
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              await _firestoreService
+                                  .deleteRoute(routeId);
                             },
                           ),
                         ),
