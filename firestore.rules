@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection - only authenticated users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Routes collection - authenticated users can read, only owners can write
+    match /routes/{routeId} {
+      // CREATE route - use request.auth.uid directly for creation
+      allow create: if request.auth != null;
+      
+      // READ, UPDATE, DELETE route - check ownership
+      allow read, update, delete: if request.auth != null
+        && request.auth.uid == resource.data.createdBy;
+    }
+    
+    // Posts collection - authenticated users can read/write their own posts
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && 
+        request.auth.uid == resource.data.authorId;
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.authorId;
+    }
+    
+    // Tasks collection - authenticated users can manage their own tasks
+    match /tasks/{taskId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // Reviews subcollection - authenticated users can read, only reviewers can write
+    match /routes/{routeId}/reviews/{reviewId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.reviewerId;
+    }
+    
+    // Favorites subcollection - users can manage their own favorites
+    match /users/{userId}/favorites/{routeId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
