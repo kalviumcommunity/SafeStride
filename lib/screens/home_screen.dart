@@ -86,28 +86,64 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              if (_routeNameController.text.isNotEmpty &&
-                  _routeDistanceController.text.isNotEmpty) {
+              final name = _routeNameController.text.trim();
+              final distance =
+                  double.tryParse(_routeDistanceController.text);
+
+              if (name.isNotEmpty && distance != null) {
                 await _firestoreService.addRoute({
-                  'name': _routeNameController.text,
-                  'distance': double.parse(
-                      _routeDistanceController.text),
-                  'createdAt':
-                      DateTime.now().toIso8601String(),
-                  'createdBy':
-                      FirebaseAuth.instance.currentUser?.uid,
+                  'name': name,
+                  'distance': distance,
                 });
 
                 _routeNameController.clear();
                 _routeDistanceController.clear();
 
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
+                if (context.mounted) Navigator.pop(context);
               }
             },
             child: const Text('Add'),
           ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showEditDialog(
+      String routeId, Map<String, dynamic> route) async {
+    _routeNameController.text = route['name'];
+    _routeDistanceController.text =
+        route['distance'].toString();
+
+    return showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Edit Route"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: _routeNameController),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _routeDistanceController,
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () async {
+              await _firestoreService.updateRoute(routeId, {
+                'name': _routeNameController.text,
+                'distance': double.tryParse(
+                        _routeDistanceController.text) ??
+                    0,
+              });
+
+              Navigator.pop(context);
+            },
+            child: const Text("Update"),
+          )
         ],
       ),
     );
@@ -128,6 +164,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SnackBar(
                   content: Text('Map feature coming in next update!'),
                   backgroundColor: Colors.blue,
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const MapScreen(),
                 ),
               );
             },
@@ -182,13 +222,11 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           if (user != null)
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Text(
                 "Welcome, ${user.email}",
                 style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                    fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 20),
@@ -310,6 +348,63 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
+          ],
+        ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _firestoreService.getUserRoutes(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(
+                      child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData ||
+                    snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text('No routes found'),
+                  );
+                }
+
+                final routes = snapshot.data!.docs;
+
+                return ListView.builder(
+                  itemCount: routes.length,
+                  itemBuilder: (context, index) {
+                    final route =
+                        routes[index].data()
+                            as Map<String, dynamic>;
+                    final routeId = routes[index].id;
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      child: ListTile(
+                        title: Text(
+                          route['name'] ?? 'No name',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold),
+                        ),
+                        subtitle:
+                            Text('${route['distance']} km'),
+                        onTap: () =>
+                            _showEditDialog(routeId, route),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete,
+                              color: Colors.red),
+                          onPressed: () async {
+                            await _firestoreService
+                                .deleteRoute(routeId);
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
