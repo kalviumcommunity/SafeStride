@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/firestore_service.dart';
-import 'map_screen.dart'; // 👈 ADD THIS
+import 'map_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -59,28 +59,64 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              if (_routeNameController.text.isNotEmpty &&
-                  _routeDistanceController.text.isNotEmpty) {
+              final name = _routeNameController.text.trim();
+              final distance =
+                  double.tryParse(_routeDistanceController.text);
+
+              if (name.isNotEmpty && distance != null) {
                 await _firestoreService.addRoute({
-                  'name': _routeNameController.text,
-                  'distance': double.parse(
-                      _routeDistanceController.text),
-                  'createdAt':
-                      DateTime.now().toIso8601String(),
-                  'createdBy':
-                      FirebaseAuth.instance.currentUser?.uid,
+                  'name': name,
+                  'distance': distance,
                 });
 
                 _routeNameController.clear();
                 _routeDistanceController.clear();
 
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
+                if (context.mounted) Navigator.pop(context);
               }
             },
             child: const Text('Add'),
           ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showEditDialog(
+      String routeId, Map<String, dynamic> route) async {
+    _routeNameController.text = route['name'];
+    _routeDistanceController.text =
+        route['distance'].toString();
+
+    return showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Edit Route"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: _routeNameController),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _routeDistanceController,
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () async {
+              await _firestoreService.updateRoute(routeId, {
+                'name': _routeNameController.text,
+                'distance': double.tryParse(
+                        _routeDistanceController.text) ??
+                    0,
+              });
+
+              Navigator.pop(context);
+            },
+            child: const Text("Update"),
+          )
         ],
       ),
     );
@@ -94,26 +130,21 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('SafeStride'),
         actions: [
-          // 🗺 Map Button
           IconButton(
             icon: const Icon(Icons.map),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const MapScreen(),
+                  builder: (_) => const MapScreen(),
                 ),
               );
             },
           ),
-
-          // ➕ Add Route
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _showAddRouteDialog,
           ),
-
-          // 🚪 Logout
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -126,18 +157,16 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           if (user != null)
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Text(
                 "Welcome, ${user.email}",
                 style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                    fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _firestoreService.getAllRoutes(),
+              stream: _firestoreService.getUserRoutes(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState ==
                     ConnectionState.waiting) {
@@ -171,9 +200,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: const TextStyle(
                               fontWeight: FontWeight.bold),
                         ),
-                        subtitle: Text(
-                          '${route['distance']} km',
-                        ),
+                        subtitle:
+                            Text('${route['distance']} km'),
+                        onTap: () =>
+                            _showEditDialog(routeId, route),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete,
                               color: Colors.red),
