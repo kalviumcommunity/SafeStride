@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import 'firestore_demo_screen.dart';
-import 'map_screen.dart'; // 👈 ADD THIS
+import 'realtime_sync_demo.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -159,6 +160,10 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.map),
             onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Map feature coming in next update!'),
+                  backgroundColor: Colors.blue,
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -166,6 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
             },
+            tooltip: 'Map View',
           ),
           IconButton(
             icon: const Icon(Icons.storage),
@@ -178,6 +184,18 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
             tooltip: 'Firestore Demo',
+          ),
+          IconButton(
+            icon: const Icon(Icons.sync),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const RealtimeSyncDemo(),
+                ),
+              );
+            },
+            tooltip: 'Real-Time Sync Demo',
           ),
           IconButton(
             icon: const Icon(Icons.add),
@@ -212,7 +230,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            // Section Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -232,9 +249,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            // Routes List
             Expanded(
-              child: StreamBuilder(
+              child: StreamBuilder<QuerySnapshot>(
                 stream: _firestoreService.getAllRoutes(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -322,8 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           trailing: IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
                             onPressed: () async {
-                              await _firestoreService
-                                  .deleteRoute(routeId);
+                              await _firestoreService.deleteRoute(routeId);
                             },
                           ),
                         ),
