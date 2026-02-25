@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import 'firestore_demo_screen.dart';
-import 'map_screen.dart'; // 👈 ADD THIS
+import 'realtime_sync_demo.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -120,20 +121,18 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('SafeStride'),
         actions: [
-          // 🗺 Map Button
           IconButton(
             icon: const Icon(Icons.map),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MapScreen(),
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Map feature coming in next update!'),
+                  backgroundColor: Colors.blue,
                 ),
               );
             },
+            tooltip: 'Map View',
           ),
-
-          // ➕ Add Route
           IconButton(
             icon: const Icon(Icons.storage),
             onPressed: () {
@@ -147,11 +146,21 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Firestore Demo',
           ),
           IconButton(
+            icon: const Icon(Icons.sync),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const RealtimeSyncDemo(),
+                ),
+              );
+            },
+            tooltip: 'Real-Time Sync Demo',
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             onPressed: _showAddRouteDialog,
           ),
-
-          // 🚪 Logout
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -183,7 +192,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            // Section Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -203,9 +211,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            // Routes List
             Expanded(
-              child: StreamBuilder(
+              child: StreamBuilder<QuerySnapshot>(
                 stream: _firestoreService.getAllRoutes(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -293,8 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           trailing: IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
                             onPressed: () async {
-                              await _firestoreService
-                                  .deleteRoute(routeId);
+                              await _firestoreService.deleteRoute(routeId);
                             },
                           ),
                         ),
@@ -304,62 +310,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
-          ],
-        ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firestoreService.getAllRoutes(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(
-                      child: CircularProgressIndicator());
-                }
-
-                if (!snapshot.hasData ||
-                    snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text('No routes found'),
-                  );
-                }
-
-                final routes = snapshot.data!.docs;
-
-                return ListView.builder(
-                  itemCount: routes.length,
-                  itemBuilder: (context, index) {
-                    final route =
-                        routes[index].data()
-                            as Map<String, dynamic>;
-                    final routeId = routes[index].id;
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      child: ListTile(
-                        title: Text(
-                          route['name'] ?? 'No name',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          '${route['distance']} km',
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete,
-                              color: Colors.red),
-                          onPressed: () async {
-                            await _firestoreService
-                                .deleteRoute(routeId);
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
         ],
       ),
     );
