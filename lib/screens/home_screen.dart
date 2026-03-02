@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import 'firestore_demo_screen.dart';
 import 'realtime_sync_demo.dart';
+import 'media_upload_demo.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -164,10 +165,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SnackBar(
                   content: Text('Map feature coming in next update!'),
                   backgroundColor: Colors.blue,
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const MapScreen(),
                 ),
               );
             },
@@ -196,6 +193,18 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
             tooltip: 'Real-Time Sync Demo',
+          ),
+          IconButton(
+            icon: const Icon(Icons.cloud_upload),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MediaUploadDemo(),
+                ),
+              );
+            },
+            tooltip: 'Media Upload Demo',
           ),
           IconButton(
             icon: const Icon(Icons.add),
@@ -251,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: _firestoreService.getAllRoutes(),
+                stream: _firestoreService.getUserRoutes(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());

@@ -536,11 +536,122 @@ In the final SafeStride app, real-time updates could be used for:
    - **Learning**: Memory leaks can cause performance issues over time
 
 ### Future Enhancements
+- **Security Rules**: Implement proper Firestore security for real-time access
 - **Offline Support**: Full offline capabilities with intelligent sync
 - **Conflict Resolution**: Handle simultaneous edits from multiple users
 - **Batch Updates**: Optimize multiple document operations
-- **Security Rules**: Implement proper Firestore security for real-time access
 - **Performance Monitoring**: Track real-time update performance metrics
+
+## 🔐 Firebase Security Rules
+
+### Current Status
+**⚠️ IMPORTANT**: Security rules need to be deployed to Firebase Console for production use.
+
+### Security Rules Implementation
+Proper security rules have been created in `firestore.rules` file:
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection - only authenticated users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Routes collection - authenticated users can read, only owners can write
+    match /routes/{routeId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        request.auth.uid == resource.data.createdBy;
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.createdBy;
+    }
+    
+    // Posts collection - authenticated users can read/write their own posts
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && 
+        request.auth.uid == resource.data.authorId;
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.authorId;
+    }
+    
+    // Tasks collection - authenticated users can manage their own tasks
+    match /tasks/{taskId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // Reviews and favorites subcollections with proper access control
+    match /routes/{routeId}/reviews/{reviewId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.reviewerId;
+    }
+    
+    match /users/{userId}/favorites/{routeId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+```
+
+### Security Features Implemented
+
+#### **Authentication Required**
+- All collections require `request.auth != null` for access
+- Prevents anonymous users from reading/writing data
+
+#### **Ownership-Based Access**
+- Users can only modify their own data (`request.auth.uid == userId`)
+- Route creators can only edit/delete their routes
+- Post authors can only modify their posts
+
+#### **Collection-Specific Rules**
+- **Users**: Personal data access only
+- **Routes**: Public read, owner write/delete
+- **Posts**: Public read, author write/delete
+- **Tasks**: Personal task management
+- **Reviews**: Public read, reviewer write/delete
+
+### Deployment Instructions
+
+1. **Open Firebase Console** → Firestore Database → Rules tab
+2. **Replace existing rules** with content from `firestore.rules` file
+3. **Publish rules** to apply security settings
+4. **Test access** with different user accounts
+
+### Security Best Practices
+
+#### **Data Validation**
+```javascript
+match /routes/{routeId} {
+  allow create: if request.auth != null &&
+    request.resource.data.matches({
+      name: isString,
+      distance: isNumber,
+      type: isString && (type in ['running', 'cycling'])
+    });
+}
+```
+
+#### **Rate Limiting**
+```javascript
+match /posts/{postId} {
+  allow create: if request.auth != null &&
+    request.time < resource.data.timestamp + duration(1, 'h');
+}
+```
+
+#### **Data Size Limits**
+```javascript
+match /tasks/{taskId} {
+  allow write: if request.auth != null &&
+    request.resource.data.size() < 1000;
+}
+```
 - ✅ Firestore database created
 - ✅ Collections: users, routes, reviews
 
