@@ -75,6 +75,28 @@ class FirestoreService {
         .snapshots();
   }
 
+  // Get route by ID
+  Future<DocumentSnapshot> getRouteById(String routeId) async {
+    try {
+      return await _db.collection('routes').doc(routeId).get();
+    } catch (e) {
+      debugPrint('Error getting route: $e');
+      rethrow;
+    }
+  }
+
+  // Get route by ID with real-time updates
+  Stream<DocumentSnapshot> getRouteByIdStream(String routeId) {
+    return _db.collection('routes').doc(routeId).snapshots();
+  }
+
+  // Get user data with real-time updates
+  Stream<DocumentSnapshot> getUserDataStream(String uid) {
+    return _db.collection('users').doc(uid).snapshots();
+  }
+
+  // Update route
+  Future<void> updateRoute(String routeId, Map<String, dynamic> data) async {
   Future<void> updateRoute(
       String routeId, Map<String, dynamic> data) async {
     try {
