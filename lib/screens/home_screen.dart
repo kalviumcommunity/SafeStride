@@ -6,6 +6,7 @@ import '../services/firestore_service.dart';
 import 'firestore_demo_screen.dart';
 import 'realtime_sync_demo.dart';
 import 'media_upload_demo.dart';
+import 'cloud_functions_demo.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -205,6 +206,18 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
             tooltip: 'Media Upload Demo',
+          ),
+          IconButton(
+            icon: const Icon(Icons.functions),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CloudFunctionsDemo(),
+                ),
+              );
+            },
+            tooltip: 'Cloud Functions Demo',
           ),
           IconButton(
             icon: const Icon(Icons.add),
