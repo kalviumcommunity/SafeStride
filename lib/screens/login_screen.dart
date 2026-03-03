@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'signup_screen.dart';
+import 'main_navigation.dart'; 
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,14 +27,13 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Improved Email Validator
+  // Email Validator
   String? _validateEmail(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Email is required';
     }
 
-    final emailRegex =
-        RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
 
     if (!emailRegex.hasMatch(value.trim())) {
       return 'Enter a valid email address';
@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  // Improved Password Validator
+  // Password Validator
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Password is required';
@@ -66,7 +66,15 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text,
       );
 
-      if (user == null && mounted) {
+      if (user != null && mounted) {
+        // ✅ Navigate to Bottom Navigation Screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MainNavigation(),
+          ),
+        );
+      } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Invalid email or password'),
@@ -77,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Login failed. Please try again.'),
             backgroundColor: Colors.red,
           ),
@@ -102,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction, // 🔥 Better UX
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -145,8 +153,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           : Icons.visibility_off,
                     ),
                     onPressed: () {
-                      setState(
-                          () => _obscurePassword = !_obscurePassword);
+                      setState(() =>
+                          _obscurePassword = !_obscurePassword);
                     },
                   ),
                 ),
@@ -185,9 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 16),
 
               TextButton(
-                onPressed: () {
-                  // You can implement reset password later
-                },
+                onPressed: () {},
                 child: const Text('Forgot Password?'),
               ),
 
