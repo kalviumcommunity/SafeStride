@@ -854,7 +854,415 @@ print(safetyScore['safetyScore']); // "5.2"
 - **A/B Testing** - Deploy multiple function versions for testing
 - **Regional Deployment** - Deploy functions to multiple regions for latency optimization
 
-## 🔐 Firebase Security Rules
+## � Firebase Cloud Messaging (FCM) Implementation
+
+### Overview
+This project demonstrates comprehensive Firebase Cloud Messaging (FCM) integration for push notifications. The implementation includes:
+
+1. **Permission Handling** - Request and manage notification permissions
+2. **Device Token Management** - Retrieve and store FCM tokens
+3. **Message Listeners** - Handle foreground, background, and terminated app states
+4. **Topic Subscriptions** - Subscribe/unsubscribe to notification topics
+5. **Real-time Demo** - Interactive UI to test FCM functionality
+
+### FCM Setup and Configuration
+
+#### **Dependencies Added**
+```yaml
+# 🔥 Firebase
+firebase_messaging: ^15.0.0
+
+# 🔔 Notifications
+permission_handler: ^11.0.0
+```
+
+#### **Platform Configuration**
+
+##### **Android Configuration**
+```xml
+<!-- android/app/src/main/AndroidManifest.xml -->
+<application>
+    <service
+        android:name=".MyFirebaseMessagingService"
+        android:exported="false">
+        <intent-filter>
+            <action android:name="com.google.firebase.MESSAGING_EVENT" />
+        </intent-filter>
+    </service>
+</application>
+```
+
+##### **iOS Configuration**
+```xml
+<!-- ios/Runner/Info.plist -->
+<key>UIBackgroundModes</key>
+<array>
+    <string>remote-notification</string>
+</array>
+```
+
+### FCM Service Implementation
+
+#### **Core Service Class**
+```dart
+import 'dart:io';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+class FCMService {
+  static final FCMService _instance = FCMService._internal();
+  factory FCMService() => _instance;
+  FCMService._internal();
+
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  String? _fcmToken;
+  final StreamController<Map<String, dynamic>> _messageStreamController = 
+      StreamController<Map<String, dynamic>>.broadcast();
+
+  // Initialize FCM with permissions and listeners
+  Future<void> initialize() async {
+    await _requestPermission();
+    await _getFCMToken();
+    _setupMessageListeners();
+  }
+
+  // Request notification permissions
+  Future<void> _requestPermission() async {
+    if (Platform.isIOS) {
+      NotificationSettings settings = await _firebaseMessaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+    }
+
+    if (Platform.isAndroid) {
+      await Permission.notification.request();
+    }
+  }
+
+  // Get and save FCM token
+  Future<void> _getFCMToken() async {
+    String? token = await _firebaseMessaging.getToken();
+    if (token != null) {
+      _fcmToken = token;
+      await _saveTokenToPrefs(token);
+      debugPrint('FCM Token: $token');
+    }
+  }
+
+  // Setup message listeners
+  void _setupMessageListeners() {
+    // Handle messages when app is in foreground
+    FirebaseMessaging.onMessage.listen(_handleMessage);
+
+    // Handle messages when app is in background but opened
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+
+    // Listen for token refresh
+    _firebaseMessaging.onTokenRefresh.listen((token) {
+      _fcmToken = token;
+      _saveTokenToPrefs(token);
+    });
+  }
+
+  // Handle incoming messages
+  void _handleMessage(RemoteMessage message) {
+    debugPrint('Received message: ${message.messageId}');
+    _messageStreamController.add({
+      'title': message.notification?.title ?? 'New Notification',
+      'body': message.notification?.body ?? 'You have a new message',
+      'data': message.data,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
+  // Subscribe to topic
+  Future<void> subscribeToTopic(String topic) async {
+    await _firebaseMessaging.subscribeToTopic(topic);
+  }
+
+  // Unsubscribe from topic
+  Future<void> unsubscribeFromTopic(String topic) async {
+    await _firebaseMessaging.unsubscribeFromTopic(topic);
+  }
+}
+```
+
+### Flutter Integration
+
+#### **FCM Demo Screen**
+```dart
+class FCMDemoScreen extends StatefulWidget {
+  const FCMDemoScreen({super.key});
+
+  @override
+  State<FCMDemoScreen> createState() => _FCMDemoScreenState();
+}
+
+class _FCMDemoScreenState extends State<FCMDemoScreen> {
+  final FCMService _fcmService = FCMService();
+  String? _fcmToken;
+  List<Map<String, dynamic>> _messages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeFCM();
+  }
+
+  Future<void> _initializeFCM() async {
+    await _fcmService.initialize();
+    
+    // Listen to incoming messages
+    _fcmService.messageStream.listen((message) {
+      setState(() {
+        _messages.insert(0, message);
+      });
+    });
+
+    // Get current token
+    setState(() {
+      _fcmToken = _fcmService.fcmToken;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('FCM Demo')),
+      body: Column(
+        children: [
+          // FCM Token display
+          Card(
+            child: ListTile(
+              title: const Text('FCM Token'),
+              subtitle: Text(_fcmToken ?? 'Loading...'),
+              trailing: IconButton(
+                icon: const Icon(Icons.copy),
+                onPressed: _copyTokenToClipboard,
+              ),
+            ),
+          ),
+          
+          // Topic subscription
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _topicController,
+                    decoration: const InputDecoration(
+                      labelText: 'Topic Name',
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      ElevatedButton(
+                        onPressed: _subscribeToTopic,
+                        child: const Text('Subscribe'),
+                      ),
+                      ElevatedButton(
+                        onPressed: _unsubscribeFromTopic,
+                        child: const Text('Unsubscribe'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Messages list
+          Expanded(
+            child: ListView.builder(
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                return ListTile(
+                  leading: const Icon(Icons.notifications),
+                  title: Text(message['title']),
+                  subtitle: Text(message['body']),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+### Testing FCM Functionality
+
+#### **1. Send Test Notification from Firebase Console**
+1. **Open Firebase Console** → Cloud Messaging
+2. **Create New Message** → Compose message
+3. **Target**: Select your app or use FCM token
+4. **Notification**: Enter title and body
+5. **Send** the message
+6. **Check** your Flutter app for the notification
+
+#### **2. Send Topic-Based Notification**
+```bash
+# Subscribe to topic in your app
+await _fcmService.subscribeToTopic('safestride_updates');
+
+# Send notification via Firebase Console
+# Target: Topic -> safestride_updates
+```
+
+#### **3. Send Direct Token Notification**
+```bash
+# Copy FCM token from the demo app
+# Use token in Firebase Console to send direct notification
+```
+
+### Message Handling States
+
+#### **Foreground Messages**
+```dart
+FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+  // App is in foreground
+  // Show in-app notification or banner
+  _showInAppNotification(message);
+});
+```
+
+#### **Background Messages**
+```dart
+FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+  // App was in background, user tapped notification
+  // Navigate to specific screen based on message data
+  _handleNotificationTap(message);
+});
+```
+
+#### **Terminated App Messages**
+```dart
+// Get initial message when app was terminated
+RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
+if (initialMessage != null) {
+  _handleMessage(initialMessage);
+}
+```
+
+### Platform-Specific Considerations
+
+#### **Android Requirements**
+- **Target SDK**: 33+ for notification permission handling
+- **Manifest**: Declare FirebaseMessagingService
+- **Icons**: Configure notification icons in `res/drawable`
+
+#### **iOS Requirements**
+- **APNs Certificate**: Configure in Apple Developer Portal
+- **Capabilities**: Enable Push Notifications in Xcode
+- **Background Modes**: Add Remote Notifications capability
+
+#### **Web Requirements**
+- **Service Worker**: Configure for web push notifications
+- **Manifest**: Include gcm_sender_id
+- **HTTPS**: Required for web notifications
+
+### Advanced Features
+
+#### **Custom Data Payloads**
+```dart
+// Send custom data with notification
+{
+  "notification": {
+    "title": "New Route Added",
+    "body": "Check out this amazing running route!"
+  },
+  "data": {
+    "route_id": "abc123",
+    "type": "running",
+    "action": "view_route"
+  }
+}
+```
+
+#### **Notification Channels (Android)**
+```dart
+// Create notification channels for different types
+AndroidNotificationChannel channel = AndroidNotificationChannel(
+  'high_importance_channel',
+  'High Importance Notifications',
+  importance: Importance.high,
+);
+```
+
+#### **Silent Notifications**
+```dart
+// Send data-only messages for background processing
+{
+  "data": {
+    "type": "route_update",
+    "route_id": "abc123"
+  }
+  // No notification field = silent message
+}
+```
+
+### Screenshots
+
+#### FCM Demo Interface
+![FCM demo showing token, topics, and messages](assets/images/fcm_demo.png)
+
+#### Push Notification Received
+![Push notification displayed on device](assets/images/push_notification.png)
+
+#### Firebase Console Messaging
+![Firebase Console Cloud Messaging interface](assets/images/fcm_console.png)
+
+### Use Cases in SafeStride
+
+1. **Route Updates** - Notify users about new routes in their area
+2. **Safety Alerts** - Send safety warnings for specific routes
+3. **Community Updates** - Notify about route reviews and ratings
+4. **Achievement Notifications** - Celebrate user milestones
+5. **Event Reminders** - Notify about upcoming running events
+6. **Weather Alerts** - Send weather-based route recommendations
+7. **Social Features** - Notify about friend activities and challenges
+8. **System Messages** - Important app updates and maintenance notices
+
+### Challenges and Solutions
+
+#### **Permission Handling**
+- **Challenge**: Users denying notification permissions
+- **Solution**: Graceful fallback to in-app notifications and clear permission explanations
+
+#### **Token Management**
+- **Challenge**: Token refresh and synchronization
+- **Solution**: Automatic token refresh listeners and server-side token storage
+
+#### **Background Processing**
+- **Challenge**: Handling messages when app is terminated
+- **Solution**: Proper initial message handling and background message configuration
+
+#### **Platform Differences**
+- **Challenge**: Different notification behaviors across platforms
+- **Solution**: Platform-specific configurations and unified message handling
+
+#### **Testing and Debugging**
+- **Challenge**: Testing push notifications in development
+- **Solution**: Firebase Console testing and local notification simulators
+
+### Future Enhancements
+- **Local Notifications** - Integrate flutter_local_notifications for better UX
+- **Rich Media** - Support for images, videos, and interactive notifications
+- **Scheduled Notifications** - Time-based and location-based notifications
+- **Analytics** - Track notification delivery and engagement metrics
+- **A/B Testing** - Test different notification content and timing
+- **Smart Notifications** - AI-powered notification timing and content optimization
+
+## �🔐 Firebase Security Rules
 
 ### Current Status
 **⚠️ IMPORTANT**: Security rules need to be deployed to Firebase Console for production use.

@@ -3,10 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../services/fcm_service.dart';
 import 'firestore_demo_screen.dart';
 import 'realtime_sync_demo.dart';
 import 'media_upload_demo.dart';
 import 'cloud_functions_demo.dart';
+import 'fcm_demo_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,11 +20,26 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final AuthService _authService = AuthService();
+  final FCMService _fcmService = FCMService();
 
   final TextEditingController _routeNameController =
       TextEditingController();
   final TextEditingController _routeDistanceController =
       TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeFCM();
+  }
+
+  Future<void> _initializeFCM() async {
+    try {
+      await _fcmService.initialize();
+    } catch (e) {
+      debugPrint('Error initializing FCM: $e');
+    }
+  }
 
   Future<void> _addSampleRoute() async {
     await _firestoreService.addRoute({
@@ -52,6 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _routeNameController.dispose();
     _routeDistanceController.dispose();
+    _fcmService.dispose();
     super.dispose();
   }
 
@@ -106,46 +124,6 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             child: const Text('Add'),
           ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showEditDialog(
-      String routeId, Map<String, dynamic> route) async {
-    _routeNameController.text = route['name'];
-    _routeDistanceController.text =
-        route['distance'].toString();
-
-    return showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Edit Route"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: _routeNameController),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _routeDistanceController,
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () async {
-              await _firestoreService.updateRoute(routeId, {
-                'name': _routeNameController.text,
-                'distance': double.tryParse(
-                        _routeDistanceController.text) ??
-                    0,
-              });
-
-              Navigator.pop(context);
-            },
-            child: const Text("Update"),
-          )
         ],
       ),
     );
@@ -218,6 +196,18 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
             tooltip: 'Cloud Functions Demo',
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FCMDemoScreen(),
+                ),
+              );
+            },
+            tooltip: 'FCM Demo',
           ),
           IconButton(
             icon: const Icon(Icons.add),
@@ -372,62 +362,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firestoreService.getUserRoutes(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(
-                      child: CircularProgressIndicator());
-                }
-
-                if (!snapshot.hasData ||
-                    snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text('No routes found'),
-                  );
-                }
-
-                final routes = snapshot.data!.docs;
-
-                return ListView.builder(
-                  itemCount: routes.length,
-                  itemBuilder: (context, index) {
-                    final route =
-                        routes[index].data()
-                            as Map<String, dynamic>;
-                    final routeId = routes[index].id;
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      child: ListTile(
-                        title: Text(
-                          route['name'] ?? 'No name',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold),
-                        ),
-                        subtitle:
-                            Text('${route['distance']} km'),
-                        onTap: () =>
-                            _showEditDialog(routeId, route),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete,
-                              color: Colors.red),
-                          onPressed: () async {
-                            await _firestoreService
-                                .deleteRoute(routeId);
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
       ),
     );
   }
