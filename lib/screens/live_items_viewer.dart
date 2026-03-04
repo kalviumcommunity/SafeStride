@@ -11,7 +11,7 @@ class LiveItemsViewer extends StatefulWidget {
 class _LiveItemsViewerState extends State<LiveItemsViewer> {
   late Future<List<String>> _itemsFuture;
 
-
+  // Toggle these to simulate different states
   bool simulateError = false;
   bool simulateEmpty = false;
 
