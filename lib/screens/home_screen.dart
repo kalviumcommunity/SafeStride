@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
-import 'map_screen.dart';
+import '../services/fcm_service.dart';
+import 'firestore_demo_screen.dart';
+import 'realtime_sync_demo.dart';
+import 'media_upload_demo.dart';
+import 'cloud_functions_demo.dart';
+import 'fcm_demo_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,6 +19,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  final AuthService _authService = AuthService();
+  final FCMService _fcmService = FCMService();
 
   final TextEditingController _routeNameController =
       TextEditingController();
@@ -20,9 +28,48 @@ class _HomeScreenState extends State<HomeScreen> {
       TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _initializeFCM();
+  }
+
+  Future<void> _initializeFCM() async {
+    try {
+      await _fcmService.initialize();
+    } catch (e) {
+      debugPrint('Error initializing FCM: $e');
+    }
+  }
+
+  Future<void> _addSampleRoute() async {
+    await _firestoreService.addRoute({
+      'name': 'Central Park Loop',
+      'type': 'running',
+      'distance': 5.2,
+      'safetyRating': 4.5,
+      'difficulty': 'medium',
+      'description': 'Beautiful loop around Central Park with scenic views',
+      'createdAt': DateTime.now().toIso8601String(),
+      'createdBy': FirebaseAuth.instance.currentUser?.uid,
+    });
+
+    await _firestoreService.addRoute({
+      'name': 'Brooklyn Bridge Route',
+      'type': 'cycling',
+      'distance': 8.7,
+      'safetyRating': 4.2,
+      'difficulty': 'hard',
+      'description': 'Challenging route with iconic bridge views',
+      'createdAt': DateTime.now().toIso8601String(),
+      'createdBy': FirebaseAuth.instance.currentUser?.uid,
+    });
+  }
+
+  @override
   void dispose() {
     _routeNameController.dispose();
     _routeDistanceController.dispose();
+    _fcmService.dispose();
     super.dispose();
   }
 
@@ -82,46 +129,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _showEditDialog(
-      String routeId, Map<String, dynamic> route) async {
-    _routeNameController.text = route['name'];
-    _routeDistanceController.text =
-        route['distance'].toString();
-
-    return showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Edit Route"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: _routeNameController),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _routeDistanceController,
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () async {
-              await _firestoreService.updateRoute(routeId, {
-                'name': _routeNameController.text,
-                'distance': double.tryParse(
-                        _routeDistanceController.text) ??
-                    0,
-              });
-
-              Navigator.pop(context);
-            },
-            child: const Text("Update"),
-          )
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -133,13 +140,74 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.map),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const MapScreen(),
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Map feature coming in next update!'),
+                  backgroundColor: Colors.blue,
                 ),
               );
             },
+            tooltip: 'Map View',
+          ),
+          IconButton(
+            icon: const Icon(Icons.storage),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FirestoreDemoScreen(),
+                ),
+              );
+            },
+            tooltip: 'Firestore Demo',
+          ),
+          IconButton(
+            icon: const Icon(Icons.sync),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const RealtimeSyncDemo(),
+                ),
+              );
+            },
+            tooltip: 'Real-Time Sync Demo',
+          ),
+          IconButton(
+            icon: const Icon(Icons.cloud_upload),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MediaUploadDemo(),
+                ),
+              );
+            },
+            tooltip: 'Media Upload Demo',
+          ),
+          IconButton(
+            icon: const Icon(Icons.functions),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CloudFunctionsDemo(),
+                ),
+              );
+            },
+            tooltip: 'Cloud Functions Demo',
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FCMDemoScreen(),
+                ),
+              );
+            },
+            tooltip: 'FCM Demo',
           ),
           IconButton(
             icon: const Icon(Icons.add),
@@ -148,6 +216,15 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
+              await _authService.signOut();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Logged out successfully'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
               await FirebaseAuth.instance.signOut();
             },
           ),
@@ -164,62 +241,127 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firestoreService.getUserRoutes(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(
-                      child: CircularProgressIndicator());
-                }
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Available Routes',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green[800],
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _addSampleRoute,
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('Add Sample'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: _firestoreService.getUserRoutes(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                if (!snapshot.hasData ||
-                    snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text('No routes found'),
-                  );
-                }
-
-                final routes = snapshot.data!.docs;
-
-                return ListView.builder(
-                  itemCount: routes.length,
-                  itemBuilder: (context, index) {
-                    final route =
-                        routes[index].data()
-                            as Map<String, dynamic>;
-                    final routeId = routes[index].id;
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      child: ListTile(
-                        title: Text(
-                          route['name'] ?? 'No name',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold),
-                        ),
-                        subtitle:
-                            Text('${route['distance']} km'),
-                        onTap: () =>
-                            _showEditDialog(routeId, route),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete,
-                              color: Colors.red),
-                          onPressed: () async {
-                            await _firestoreService
-                                .deleteRoute(routeId);
-                          },
-                        ),
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        'Error: ${snapshot.error}',
+                        style: TextStyle(color: Colors.red[600]),
                       ),
                     );
-                  },
-                );
-              },
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.directions_run,
+                            size: 80,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'No routes available',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Add your first route to get started!',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final routes = snapshot.data!.docs;
+
+                  return ListView.builder(
+                    itemCount: routes.length,
+                    itemBuilder: (context, index) {
+                      final route = routes[index].data() as Map<String, dynamic>;
+                      final routeId = routes[index].id;
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: route['type'] == 'running'
+                                ? Colors.orange[100]
+                                : Colors.blue[100],
+                            child: Icon(
+                              route['type'] == 'running'
+                                  ? Icons.directions_run
+                                  : Icons.directions_bike,
+                              color: route['type'] == 'running'
+                                  ? Colors.orange[600]
+                                  : Colors.blue[600],
+                            ),
+                          ),
+                          title: Text(
+                            route['name'] ?? 'Unknown Route',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${route['distance']?.toString() ?? '0'} km • ${route['difficulty'] ?? 'Unknown'}',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              await _firestoreService.deleteRoute(routeId);
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
