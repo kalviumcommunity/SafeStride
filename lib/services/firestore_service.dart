@@ -96,7 +96,6 @@ class FirestoreService {
   }
 
   // Update route
-  Future<void> updateRoute(String routeId, Map<String, dynamic> data) async {
   Future<void> updateRoute(
       String routeId, Map<String, dynamic> data) async {
     try {

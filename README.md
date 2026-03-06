@@ -1608,6 +1608,382 @@ Push to branch
 
 Open Pull Request
 
+## 🧩 Custom Widgets Implementation
+
+### Overview
+This project demonstrates the power of custom widgets in Flutter for creating reusable, modular UI components. The implementation includes both stateless and stateful custom widgets that can be used across multiple screens.
+
+### Custom Widgets Created
+
+#### **1. InfoCard (Stateless Widget)**
+A reusable card component that displays an icon, title, and subtitle with customizable styling and interaction.
+
+```dart
+// lib/widgets/info_card.dart
+import 'package:flutter/material.dart';
+
+class InfoCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final Color? iconColor;
+  final double? iconSize;
+  final EdgeInsets? margin;
+  final double? elevation;
+
+  const InfoCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    this.onTap,
+    this.iconColor,
+    this.iconSize,
+    this.margin,
+    this.elevation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: margin ?? const EdgeInsets.all(12),
+      elevation: elevation ?? 4,
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: iconColor ?? Colors.teal,
+          size: iconSize ?? 32,
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(subtitle),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+```
+
+#### **2. LikeButton (Stateful Widget)**
+An interactive like button with animation, count display, and customizable styling.
+
+```dart
+// lib/widgets/like_button.dart
+import 'package:flutter/material.dart';
+
+class LikeButton extends StatefulWidget {
+  final bool? initialLiked;
+  final Color? likedColor;
+  final Color? unlikedColor;
+  final double? iconSize;
+  final VoidCallback? onLikeChanged;
+  final bool showCount;
+  final int initialCount;
+
+  const LikeButton({
+    super.key,
+    this.initialLiked,
+    this.likedColor,
+    this.unlikedColor,
+    this.iconSize,
+    this.onLikeChanged,
+    this.showCount = false,
+    this.initialCount = 0,
+  });
+
+  @override
+  State<LikeButton> createState() => _LikeButtonState();
+}
+
+class _LikeButtonState extends State<LikeButton> {
+  late bool _isLiked;
+  int _likeCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLiked = widget.initialLiked ?? false;
+    _likeCount = widget.initialCount;
+  }
+
+  void _toggleLike() {
+    setState(() {
+      _isLiked = !_isLiked;
+      if (_isLiked) {
+        _likeCount++;
+      } else {
+        _likeCount--;
+      }
+    });
+
+    if (widget.onLikeChanged != null) {
+      widget.onLikeChanged!();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(
+            _isLiked ? Icons.favorite : Icons.favorite_border,
+            color: _isLiked 
+                ? (widget.likedColor ?? Colors.red)
+                : (widget.unlikedColor ?? Colors.grey),
+            size: widget.iconSize ?? 24,
+          ),
+          onPressed: _toggleLike,
+        ),
+        if (widget.showCount)
+          Text(
+            '$_likeCount',
+            style: TextStyle(
+              color: _isLiked 
+                  ? (widget.likedColor ?? Colors.red)
+                  : Colors.grey,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+      ],
+    );
+  }
+}
+```
+
+### Widget Reusability Examples
+
+#### **InfoCard Usage in Home Screen**
+```dart
+// lib/screens/home_screen.dart
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: [
+          // Reusing InfoCard with different data
+          InfoCard(
+            title: 'Profile',
+            subtitle: 'View your account details and preferences',
+            icon: Icons.person,
+            iconColor: Colors.blue,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DetailsScreen(),
+                ),
+              );
+            },
+          ),
+          
+          InfoCard(
+            title: 'Settings',
+            subtitle: 'Manage app preferences and notifications',
+            icon: Icons.settings,
+            iconColor: Colors.green,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Settings feature coming soon!')),
+              );
+            },
+          ),
+          
+          InfoCard(
+            title: 'Statistics',
+            subtitle: 'View your running and cycling statistics',
+            icon: Icons.analytics,
+            iconColor: Colors.orange,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Statistics feature coming soon!')),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+#### **InfoCard Usage in Details Screen**
+```dart
+// lib/screens/details_screen.dart
+class DetailsScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Same InfoCard widget reused with different data
+            InfoCard(
+              title: 'Account Info',
+              subtitle: 'User details and subscription status',
+              icon: Icons.info,
+              iconColor: Colors.blue,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Opening account details...')),
+                );
+              },
+            ),
+            
+            InfoCard(
+              title: 'Subscription',
+              subtitle: 'Premium features and billing',
+              icon: Icons.card_membership,
+              iconColor: Colors.purple,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Opening subscription details...')),
+                );
+              },
+            ),
+            
+            InfoCard(
+              title: 'Privacy Settings',
+              subtitle: 'Control your data and privacy',
+              icon: Icons.lock,
+              iconColor: Colors.red,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Opening privacy settings...')),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+#### **LikeButton Usage in Route Cards**
+```dart
+// Integration in route list items
+trailing: Row(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    LikeButton(
+      initialLiked: false,
+      showCount: true,
+      initialCount: (route['likes'] ?? 0).toInt(),
+      likedColor: Colors.red,
+      unlikedColor: Colors.grey,
+      iconSize: 20,
+    ),
+    const SizedBox(width: 8),
+    IconButton(
+      icon: const Icon(Icons.delete, color: Colors.red),
+      onPressed: () async {
+        await _firestoreService.deleteRoute(routeId);
+      },
+    ),
+  ],
+),
+```
+
+### Benefits of Custom Widgets
+
+#### **1. Code Reusability**
+- **DRY Principle**: Write once, use everywhere
+- **Consistency**: Same look and feel across the app
+- **Maintenance**: Single source of truth for UI components
+
+#### **2. Modularity**
+- **Separation of Concerns**: UI logic separated from business logic
+- **Encapsulation**: Widget behavior is self-contained
+- **Testability**: Individual widgets can be tested in isolation
+
+#### **3. Customization**
+- **Flexibility**: Parameters allow for different configurations
+- **Scalability**: Easy to add new features without breaking existing code
+- **Theme Support**: Consistent styling across the application
+
+#### **4. Team Development**
+- **Collaboration**: Different team members can work on different widgets
+- **Code Review**: Smaller, focused components are easier to review
+- **Documentation**: Self-documenting through clear widget interfaces
+
+### Screenshots
+
+#### **Home Screen with InfoCard Widgets**
+![Home screen showing multiple InfoCard widgets with different icons and colors](assets/images/home_screen_widgets.png)
+
+#### **Details Screen with Reused InfoCard**
+![Details screen demonstrating InfoCard reusability with different content](assets/images/details_screen_widgets.png)
+
+#### **LikeButton in Route Cards**
+![Route cards showing LikeButton integration with count display](assets/images/like_button_integration.png)
+
+#### **Interactive LikeButton Demo**
+![Details screen showing LikeButton widget with interactive demo](assets/images/like_button_demo.png)
+
+### Reflection
+
+#### **How Reusable Widgets Improve Code Organization**
+1. **Centralized Logic**: All widget behavior is defined in one place
+2. **Reduced Duplication**: No need to copy-paste similar UI code
+3. **Easier Maintenance**: Changes to widget design affect all instances
+4. **Better Testing**: Widgets can be unit tested independently
+5. **Cleaner Architecture**: Separation between UI components and business logic
+
+#### **Why Modularity is Important in Team-Based Development**
+1. **Parallel Development**: Team members can work on different widgets simultaneously
+2. **Code Ownership**: Clear responsibility for specific components
+3. **Reduced Conflicts**: Less chance of merge conflicts with modular code
+4. **Knowledge Sharing**: Team members can understand and use each other's widgets
+5. **Onboarding**: New team members can quickly understand the component structure
+
+#### **Challenges Faced During Widget Refactoring**
+1. **State Management**: Deciding between stateless vs stateful widgets
+2. **Parameter Design**: Choosing the right parameters for flexibility
+3. **Breaking Changes**: Ensuring widget updates don't break existing usage
+4. **Performance**: Optimizing widget rebuilds and state updates
+5. **Documentation**: Creating clear documentation for widget usage
+
+### Best Practices for Custom Widgets
+
+#### **1. Design Principles**
+- **Single Responsibility**: Each widget should have one clear purpose
+- **Composition over Inheritance**: Prefer composition for widget building
+- **Minimal Dependencies**: Keep widgets independent and reusable
+
+#### **2. Parameter Design**
+- **Required Parameters**: Use `required` for essential parameters
+- **Optional Parameters**: Provide sensible defaults for optional values
+- **Naming**: Use descriptive parameter names that indicate their purpose
+
+#### **3. Performance Considerations**
+- **Const Constructors**: Use `const` where possible for better performance
+- **Efficient Rebuilds**: Minimize unnecessary widget rebuilds
+- **State Management**: Choose appropriate state management solutions
+
+#### **4. Documentation and Testing**
+- **Code Comments**: Document complex widget behavior
+- **Usage Examples**: Provide clear examples in widget documentation
+- **Unit Tests**: Test widget behavior with different parameter combinations
+
+### Future Enhancements
+- **Widget Library**: Create a comprehensive widget library for the project
+- **Theme Integration**: Better integration with app theming system
+- **Animation Support**: Add more sophisticated animations to widgets
+- **Accessibility**: Improve accessibility features for custom widgets
+- **Internationalization**: Add support for multiple languages
+- **Component Documentation**: Create interactive widget documentation
+
+---
+
+## 📄 License
 📄 License
 
 This project is developed for academic/work collaboration purposes.

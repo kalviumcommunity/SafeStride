@@ -49,7 +49,7 @@ class _NoteScreenState extends State<NoteScreen> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Update failed")));
+      ).showSnackBar(const SnackBar(content: Text("Update failed")));
     }
   }
 

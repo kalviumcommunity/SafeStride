@@ -60,6 +60,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
+    debugPrint('Attempting login with email: ${_emailController.text.trim()}');
+
     try {
       User? user = await _authService.signIn(
         _emailController.text.trim(),
@@ -67,6 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (user != null && mounted) {
+        debugPrint('Login successful for user: ${user.email}');
         // ✅ Navigate to Bottom Navigation Screen
         Navigator.pushReplacement(
           context,
@@ -94,6 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacementNamed(context, '/home');
       }
     } on FirebaseAuthException catch (e) {
+      debugPrint('Firebase Auth Exception during login: ${e.code} - ${e.message}');
       String errorMessage = _getErrorMessage(e.code);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -105,8 +109,11 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
+      debugPrint('Unexpected error during login: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login error: $e'),
           const SnackBar(
             content: Text('Login failed. Please try again.'),
             backgroundColor: Colors.red,

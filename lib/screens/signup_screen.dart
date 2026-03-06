@@ -89,12 +89,16 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => _isLoading = true);
 
+    debugPrint('Attempting signup with email: ${_emailController.text.trim()}');
+
     try {
       User? user = await _authService.signUp(
         _emailController.text.trim(),
         _passwordController.text,
       );
 
+      if (user != null && mounted) {
+        debugPrint('Signup successful for user: ${user.email}');
       if (user == null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -115,6 +119,7 @@ class _SignupScreenState extends State<SignupScreen> {
         Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
+      debugPrint('Firebase Auth Exception during signup: ${e.code} - ${e.message}');
       String errorMessage = _getErrorMessage(e.code);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -126,6 +131,7 @@ class _SignupScreenState extends State<SignupScreen> {
         );
       }
     } catch (e) {
+      debugPrint('Unexpected error during signup: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
