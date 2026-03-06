@@ -30,8 +30,13 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  Future<void> _signup() async {
-    if (!_formKey.currentState!.validate()) return;
+  // Name Validator
+  String? _validateName(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Name is required';
+    }
+    return null;
+  }
 
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -43,6 +48,44 @@ class _SignupScreenState extends State<SignupScreen> {
       );
       return;
     }
+
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+
+    if (!emailRegex.hasMatch(value.trim())) {
+      return 'Enter a valid email address';
+    }
+
+    return null;
+  }
+
+  // Password Validator
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required';
+    }
+
+    if (value.length < 8) {
+      return 'Password must be at least 8 characters';
+    }
+
+    return null;
+  }
+
+  // Confirm Password Validator
+  String? _validateConfirmPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please confirm your password';
+    }
+
+    if (value != _passwordController.text) {
+      return 'Passwords do not match';
+    }
+
+    return null;
+  }
+
+  Future<void> _signup() async {
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
@@ -56,6 +99,15 @@ class _SignupScreenState extends State<SignupScreen> {
 
       if (user != null && mounted) {
         debugPrint('Signup successful for user: ${user.email}');
+      if (user == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sign up failed. Please try again.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else if (user != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Account created successfully!'),
@@ -63,6 +115,7 @@ class _SignupScreenState extends State<SignupScreen> {
             duration: Duration(seconds: 2),
           ),
         );
+
         Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
@@ -81,8 +134,8 @@ class _SignupScreenState extends State<SignupScreen> {
       debugPrint('Unexpected error during signup: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Sign up error: $e'),
+          const SnackBar(
+            content: Text('Something went wrong. Try again.'),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 3),
           ),
@@ -124,6 +177,7 @@ class _SignupScreenState extends State<SignupScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -136,6 +190,8 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
               const SizedBox(height: 20),
+
+              // Name Field
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
@@ -143,30 +199,26 @@ class _SignupScreenState extends State<SignupScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.person),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  return null;
-                },
+                validator: _validateName,
               ),
+
               const SizedBox(height: 16),
+
+              // Email Field
               TextFormField(
                 controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
                   labelText: 'Email',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.email),
                 ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || !value.contains('@')) {
-                    return 'Please enter a valid email';
-                  }
-                  return null;
-                },
+                validator: _validateEmail,
               ),
+
               const SizedBox(height: 16),
+
+              // Password Field
               TextFormField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -175,20 +227,23 @@ class _SignupScreenState extends State<SignupScreen> {
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
                     onPressed: () {
-                      setState(() => _obscurePassword = !_obscurePassword);
+                      setState(
+                          () => _obscurePassword = !_obscurePassword);
                     },
                   ),
                 ),
-                validator: (value) {
-                  if (value == null || value.length < 6) {
-                    return 'Password must be at least 6 characters';
-                  }
-                  return null;
-                },
+                validator: _validatePassword,
               ),
+
               const SizedBox(height: 16),
+
+              // Confirm Password Field
               TextFormField(
                 controller: _confirmPasswordController,
                 obscureText: _obscureConfirmPassword,
@@ -197,20 +252,22 @@ class _SignupScreenState extends State<SignupScreen> {
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off),
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
                     onPressed: () {
-                      setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                      setState(() => _obscureConfirmPassword =
+                          !_obscureConfirmPassword);
                     },
                   ),
                 ),
-                validator: (value) {
-                  if (value == null || value != _passwordController.text) {
-                    return 'Passwords do not match';
-                  }
-                  return null;
-                },
+                validator: _validateConfirmPassword,
               ),
+
               const SizedBox(height: 24),
+
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -226,7 +283,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
                       : const Text(
@@ -235,12 +293,15 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                 ),
               ),
+
               const SizedBox(height: 16),
+
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: const Text('Already have an account? Login'),
+                child:
+                    const Text('Already have an account? Login'),
               ),
             ],
           ),
