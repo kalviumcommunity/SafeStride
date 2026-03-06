@@ -20,10 +20,10 @@ class AuthService {
       return credential.user;
     } on FirebaseAuthException catch (e) {
       debugPrint('Sign up error: ${e.message}');
-      return null;
+      rethrow; // Re-throw to let the UI handle the specific error
     } catch (e) {
       debugPrint('Unexpected sign up error: $e');
-      return null;
+      rethrow; // Re-throw to let the UI handle the specific error
     }
   }
 
@@ -37,10 +37,10 @@ class AuthService {
       return credential.user;
     } on FirebaseAuthException catch (e) {
       debugPrint('Sign in error: ${e.message}');
-      return null;
+      rethrow; // Re-throw to let the UI handle the specific error
     } catch (e) {
       debugPrint('Unexpected sign in error: $e');
-      return null;
+      rethrow; // Re-throw to let the UI handle the specific error
     }
   }
 

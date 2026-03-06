@@ -4,11 +4,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/fcm_service.dart';
+import '../widgets/info_card.dart';
+import '../widgets/like_button.dart';
 import 'firestore_demo_screen.dart';
 import 'realtime_sync_demo.dart';
 import 'media_upload_demo.dart';
 import 'cloud_functions_demo.dart';
 import 'fcm_demo_screen.dart';
+import 'details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -241,7 +244,54 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
-            const SizedBox(height: 20),
+          const SizedBox(height: 20),
+          
+          // Custom InfoCard Widgets
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                InfoCard(
+                  title: 'Profile',
+                  subtitle: 'View your account details and preferences',
+                  icon: Icons.person,
+                  iconColor: Colors.blue,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DetailsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                InfoCard(
+                  title: 'Settings',
+                  subtitle: 'Manage app preferences and notifications',
+                  icon: Icons.settings,
+                  iconColor: Colors.green,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Settings feature coming soon!')),
+                    );
+                  },
+                ),
+                InfoCard(
+                  title: 'Statistics',
+                  subtitle: 'View your running and cycling statistics',
+                  icon: Icons.analytics,
+                  iconColor: Colors.orange,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Statistics feature coming soon!')),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -347,11 +397,25 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.grey[600],
                             ),
                           ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () async {
-                              await _firestoreService.deleteRoute(routeId);
-                            },
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              LikeButton(
+                                initialLiked: false,
+                                showCount: true,
+                                initialCount: (route['likes'] ?? 0).toInt(),
+                                likedColor: Colors.red,
+                                unlikedColor: Colors.grey,
+                                iconSize: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () async {
+                                  await _firestoreService.deleteRoute(routeId);
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       );

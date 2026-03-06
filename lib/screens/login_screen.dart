@@ -31,21 +31,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
+    debugPrint('Attempting login with email: ${_emailController.text.trim()}');
+
     try {
       User? user = await _authService.signIn(
         _emailController.text.trim(),
         _passwordController.text,
       );
 
-      if (user == null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid email or password'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      } else if (user != null && mounted) {
+      if (user != null && mounted) {
+        debugPrint('Login successful for user: ${user.email}');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Login Successful!'),
@@ -57,6 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacementNamed(context, '/home');
       }
     } on FirebaseAuthException catch (e) {
+      debugPrint('Firebase Auth Exception during login: ${e.code} - ${e.message}');
       String errorMessage = _getErrorMessage(e.code);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -68,10 +64,11 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
+      debugPrint('Unexpected error during login: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Login failed: $e'),
+            content: Text('Login error: $e'),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 3),
           ),
