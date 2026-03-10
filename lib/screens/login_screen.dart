@@ -85,16 +85,6 @@ class _LoginScreenState extends State<LoginScreen> {
             duration: Duration(seconds: 3),
           ),
         );
-      } else if (user != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login Successful!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        // Navigate to home screen
-        Navigator.pushReplacementNamed(context, '/home');
       }
     } on FirebaseAuthException catch (e) {
       debugPrint('Firebase Auth Exception during login: ${e.code} - ${e.message}');
@@ -114,8 +104,6 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Login error: $e'),
-          const SnackBar(
-            content: Text('Login failed. Please try again.'),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 3),
           ),

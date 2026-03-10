@@ -38,15 +38,10 @@ class _SignupScreenState extends State<SignupScreen> {
     return null;
   }
 
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Passwords do not match'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
-      return;
+  // Email Validator
+  String? _validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Email is required';
     }
 
     final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
@@ -99,15 +94,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
       if (user != null && mounted) {
         debugPrint('Signup successful for user: ${user.email}');
-      if (user == null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sign up failed. Please try again.'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      } else if (user != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Account created successfully!'),
@@ -117,6 +103,14 @@ class _SignupScreenState extends State<SignupScreen> {
         );
 
         Navigator.pop(context);
+      } else if (user == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sign up failed. Please try again.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
       }
     } on FirebaseAuthException catch (e) {
       debugPrint('Firebase Auth Exception during signup: ${e.code} - ${e.message}');
