@@ -1,17 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
-import '../services/firestore_service.dart';
-import '../services/fcm_service.dart';
 import '../widgets/info_card.dart';
-import '../widgets/like_button.dart';
-import 'firestore_demo_screen.dart';
-import 'realtime_sync_demo.dart';
-import 'media_upload_demo.dart';
-import 'cloud_functions_demo.dart';
-import 'fcm_demo_screen.dart';
 import 'details_screen.dart';
+import 'scrollable_views.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,116 +13,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final FirestoreService _firestoreService = FirestoreService();
   final AuthService _authService = AuthService();
-  final FCMService _fcmService = FCMService();
-
-  final TextEditingController _routeNameController =
-      TextEditingController();
-  final TextEditingController _routeDistanceController =
-      TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeFCM();
-  }
-
-  Future<void> _initializeFCM() async {
-    try {
-      await _fcmService.initialize();
-    } catch (e) {
-      debugPrint('Error initializing FCM: $e');
-    }
-  }
-
-  Future<void> _addSampleRoute() async {
-    await _firestoreService.addRoute({
-      'name': 'Central Park Loop',
-      'type': 'running',
-      'distance': 5.2,
-      'safetyRating': 4.5,
-      'difficulty': 'medium',
-      'description': 'Beautiful loop around Central Park with scenic views',
-      'createdAt': DateTime.now().toIso8601String(),
-      'createdBy': FirebaseAuth.instance.currentUser?.uid,
-    });
-
-    await _firestoreService.addRoute({
-      'name': 'Brooklyn Bridge Route',
-      'type': 'cycling',
-      'distance': 8.7,
-      'safetyRating': 4.2,
-      'difficulty': 'hard',
-      'description': 'Challenging route with iconic bridge views',
-      'createdAt': DateTime.now().toIso8601String(),
-      'createdBy': FirebaseAuth.instance.currentUser?.uid,
-    });
-  }
-
-  @override
-  void dispose() {
-    _routeNameController.dispose();
-    _routeDistanceController.dispose();
-    _fcmService.dispose();
-    super.dispose();
-  }
-
-  Future<void> _showAddRouteDialog() async {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add New Route'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _routeNameController,
-              decoration: const InputDecoration(
-                labelText: 'Route Name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _routeDistanceController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Distance (km)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final name = _routeNameController.text.trim();
-              final distance =
-                  double.tryParse(_routeDistanceController.text);
-
-              if (name.isNotEmpty && distance != null) {
-                await _firestoreService.addRoute({
-                  'name': name,
-                  'distance': distance,
-                });
-
-                _routeNameController.clear();
-                _routeDistanceController.clear();
-
-                if (context.mounted) Navigator.pop(context);
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -140,82 +23,6 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('SafeStride'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.map),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Map feature coming in next update!'),
-                  backgroundColor: Colors.blue,
-                ),
-              );
-            },
-            tooltip: 'Map View',
-          ),
-          IconButton(
-            icon: const Icon(Icons.storage),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const FirestoreDemoScreen(),
-                ),
-              );
-            },
-            tooltip: 'Firestore Demo',
-          ),
-          IconButton(
-            icon: const Icon(Icons.sync),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const RealtimeSyncDemo(),
-                ),
-              );
-            },
-            tooltip: 'Real-Time Sync Demo',
-          ),
-          IconButton(
-            icon: const Icon(Icons.cloud_upload),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MediaUploadDemo(),
-                ),
-              );
-            },
-            tooltip: 'Media Upload Demo',
-          ),
-          IconButton(
-            icon: const Icon(Icons.functions),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CloudFunctionsDemo(),
-                ),
-              );
-            },
-            tooltip: 'Cloud Functions Demo',
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const FCMDemoScreen(),
-                ),
-              );
-            },
-            tooltip: 'FCM Demo',
-          ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _showAddRouteDialog,
-          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -287,12 +94,30 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
+                InfoCard(
+                  title: 'Scrollable Views',
+                  subtitle: 'Explore ListView and GridView examples',
+                  icon: Icons.view_list,
+                  iconColor: Colors.purple,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ScrollableViews(),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
           
           const SizedBox(height: 20),
-            Row(
+          
+          // Routes section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
@@ -304,128 +129,46 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: _addSampleRoute,
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Add route feature coming soon!')),
+                    );
+                  },
                   icon: const Icon(Icons.add_circle_outline),
                   label: const Text('Add Sample'),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _firestoreService.getUserRoutes(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        'Error: ${snapshot.error}',
-                        style: TextStyle(color: Colors.red[600]),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.directions_run,
+                      size: 80,
+                      color: Colors.grey,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Routes feature coming soon!',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey,
                       ),
-                    );
-                  }
-
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.directions_run,
-                            size: 80,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'No routes available',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Add your first route to get started!',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  final routes = snapshot.data!.docs;
-
-                  return ListView.builder(
-                    itemCount: routes.length,
-                    itemBuilder: (context, index) {
-                      final route = routes[index].data() as Map<String, dynamic>;
-                      final routeId = routes[index].id;
-
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: route['type'] == 'running'
-                                ? Colors.orange[100]
-                                : Colors.blue[100],
-                            child: Icon(
-                              route['type'] == 'running'
-                                  ? Icons.directions_run
-                                  : Icons.directions_bike,
-                              color: route['type'] == 'running'
-                                  ? Colors.orange[600]
-                                  : Colors.blue[600],
-                            ),
-                          ),
-                          title: Text(
-                            route['name'] ?? 'Unknown Route',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Text(
-                            '${route['distance']?.toString() ?? '0'} km • ${route['difficulty'] ?? 'Unknown'}',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              LikeButton(
-                                initialLiked: false,
-                                showCount: true,
-                                initialCount: (route['likes'] ?? 0).toInt(),
-                                likedColor: Colors.red,
-                                unlikedColor: Colors.grey,
-                                iconSize: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () async {
-                                  await _firestoreService.deleteRoute(routeId);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
